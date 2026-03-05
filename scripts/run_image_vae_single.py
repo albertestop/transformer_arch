@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import sys
 from argparse import ArgumentParser
 from dataclasses import dataclass
@@ -19,6 +20,7 @@ except ModuleNotFoundError:  # pragma: no cover
     import tomli as tomllib
 
 DEFAULT_CONFIG_PATH = REPO_ROOT / "scripts" / "configs" / "image_vae_single.toml"
+LOGGER = logging.getLogger(__name__)
 
 
 @dataclass
@@ -76,6 +78,8 @@ def _parse_config(config_path: Path) -> SingleRunConfig:
 
 
 def main() -> None:
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s | %(message)s")
+
     parser = ArgumentParser(description="Run SD3 VAE compression on a single image.")
     parser.add_argument(
         "--config",
@@ -88,9 +92,17 @@ def main() -> None:
     config_path = args.config.expanduser()
     if not config_path.is_absolute():
         config_path = (Path.cwd() / config_path).resolve()
+    LOGGER.info("Using config: %s", config_path)
 
     config = _parse_config(config_path)
+    LOGGER.info(
+        "Running single-image VAE | image=%s | size=%dx%d",
+        config.image_path,
+        config.height,
+        config.width,
+    )
 
+    LOGGER.info("Loading SD3 VAE model")
     vae = load_sd3_vae()
     result = encode_decode_image(
         image_path=config.image_path,
@@ -101,7 +113,9 @@ def main() -> None:
         save_prefix=config.prefix,
     )
 
-    print({k: v for k, v in result.items() if isinstance(v, float)})
+    summary = {k: v for k, v in result.items() if isinstance(v, float)}
+    LOGGER.info("Completed single-image VAE run")
+    print(summary)
 
 
 if __name__ == "__main__":

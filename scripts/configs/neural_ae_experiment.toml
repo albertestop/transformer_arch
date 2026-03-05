@@ -1,0 +1,61 @@
+[data]
+# Data source options:
+# - "proc_session_responses": load many files at <proc_session_root>/<session>/<responses_subdir>/*.npy
+#   where each file is typically [n_neurons, length]
+# - "array": load one pre-packed .npy/.npz array of shape [N, T, C]
+source = "proc_session_responses"
+
+# Used by source = "proc_session_responses"
+proc_session_root = "/home/albertestop/data/processed_data/sensorium_all_2023"
+sessions = ["2025-07-04_04_ESPM154_008"]
+responses_subdir = "data/responses"
+file_pattern = "*.npy"
+# max_files_per_session = 128
+transpose_proc_session = true
+# If sessions have different neuron counts, set to "truncate_min" to align automatically.
+channel_mode = "error"
+# If sessions have different trace lengths, set to "truncate_min".
+time_mode = "error"
+
+# Used by source = "array"
+# path = "data/neural/example_traces.npy"
+# npz_key = "traces"
+
+batch_size = 8
+val_split = 0.1
+shuffle_train = true
+num_workers = 0
+pin_memory = true
+drop_last = false
+
+[model]
+# Options: "mlp", "transformer", "target"
+architecture = "transformer"
+sequence_length = 300
+num_channels = 5443
+latent_dim = 256
+hidden_dim = 512
+num_layers = 4
+num_heads = 8
+dropout = 0.1
+
+# Custom model mode (used only when architecture = "target"):
+# target = "v1tovideo.neural_autoencoder.models:TransformerNeuralAutoencoder"
+# target = "v1tovideo.neural_autoencoder.models:TemplateNeuralAutoencoder"
+# target = "my_package.my_models.MyCustomAutoencoder"
+#
+# Pass constructor arguments to your custom model class (only in target mode):
+[model.kwargs]
+# sequence_length = 300
+# num_channels = 5443
+# latent_dim = 256
+
+[train]
+epochs = 35
+learning_rate = 1e-4
+weight_decay = 1e-4
+grad_clip_norm = 1.0
+device = "cuda"
+
+[output]
+dir = "outputs/neural_autoencoder/default_run"

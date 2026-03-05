@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import sys
 from argparse import ArgumentParser
 from dataclasses import dataclass
@@ -19,6 +20,7 @@ except ModuleNotFoundError:  # pragma: no cover
     import tomli as tomllib
 
 DEFAULT_CONFIG_PATH = REPO_ROOT / "scripts" / "configs" / "image_vae_batch.toml"
+LOGGER = logging.getLogger(__name__)
 
 
 @dataclass
@@ -81,6 +83,8 @@ def _parse_config(config_path: Path) -> BatchRunConfig:
 
 
 def main() -> None:
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s | %(message)s")
+
     parser = ArgumentParser(description="Evaluate SD3 VAE reconstruction on random video frames.")
     parser.add_argument(
         "--config",
@@ -93,8 +97,16 @@ def main() -> None:
     config_path = args.config.expanduser()
     if not config_path.is_absolute():
         config_path = (Path.cwd() / config_path).resolve()
+    LOGGER.info("Using config: %s", config_path)
 
     config = _parse_config(config_path)
+    LOGGER.info(
+        "Running batch VAE evaluation | frames_root=%s | samples=%d | size=%dx%d",
+        config.frames_root,
+        config.num_samples,
+        config.height,
+        config.width,
+    )
 
     summary = evaluate_random_frames(
         frames_root=config.frames_root,
@@ -104,6 +116,7 @@ def main() -> None:
         target_height=config.height,
         target_width=config.width,
     )
+    LOGGER.info("Completed batch VAE evaluation")
     print(summary)
 
 
