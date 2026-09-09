@@ -71,6 +71,7 @@ def parse_neural_ae_experiment_config(config_path: Path) -> ExperimentConfig:
     train_config = TrainConfig(
         epochs=int(train_cfg.get("epochs", 25)),
         learning_rate=float(train_cfg.get("learning_rate", 1e-4)),
+        lr_start=float(train_cfg["lr_start"]) if train_cfg.get("lr_start") is not None else None,
         weight_decay=float(train_cfg.get("weight_decay", 1e-4)),
         grad_clip_norm=float(train_cfg.get("grad_clip_norm", 1.0)),
         device=str(train_cfg.get("device", "cuda")),

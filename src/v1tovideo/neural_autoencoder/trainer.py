@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import math
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -11,6 +12,7 @@ import pytorch_lightning as pl
 import torch.nn.functional as F
 from torch import nn
 from torch.optim import AdamW
+from torch.optim.lr_scheduler import LambdaLR
 from torch.utils.data import DataLoader
 
 LOGGER = logging.getLogger(__name__)
@@ -20,6 +22,7 @@ LOGGER = logging.getLogger(__name__)
 class TrainConfig:
     epochs: int = 25
     learning_rate: float = 1e-4
+    lr_start: float | None = None
     weight_decay: float = 1e-4
     grad_clip_norm: float | None = 1.0
     device: str = "cuda:1"
@@ -244,12 +247,33 @@ class AutoencoderLightningModule(pl.LightningModule):
         self.log("val_mae", mae, on_step=False, on_epoch=True, batch_size=x.shape[0])
         return loss
 
-    def configure_optimizers(self) -> torch.optim.Optimizer:
-        return AdamW(
+    def configure_optimizers(self) -> torch.optim.Optimizer | dict[str, Any]:
+        target_lr = float(self.config.learning_rate)
+        initial_lr = float(self.config.lr_start) if self.config.lr_start is not None else target_lr
+        optimizer = AdamW(
             self.model.parameters(),
-            lr=self.config.learning_rate,
+            lr=target_lr,
             weight_decay=self.config.weight_decay,
         )
+        if math.isclose(initial_lr, target_lr):
+            raise ValueError("Initial and final LR are the same")
+        start_factor = initial_lr / target_lr
+        total_steps = max(int(self.config.epochs) - 1, 1)
+
+        def lr_lambda(epoch: int) -> float:
+            progress = min(max(float(epoch) / total_steps, 0.0), 1.0)
+            return start_factor + ((1.0 - start_factor) * progress)
+
+        scheduler = LambdaLR(optimizer, lr_lambda=lr_lambda)
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": {
+                "scheduler": scheduler,
+                "interval": "epoch",
+                "frequency": 1,
+            },
+        }
+
 
 
 class TrainHistoryCallback(pl.Callback):  # type: ignore[misc]

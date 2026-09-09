@@ -1,6 +1,6 @@
 [data]
 data_root_path = "/home/albertestop/data/processed_data/tba"
-dataset_id = "2025-07-04_04_ESPM154_vol_000_subset_1024_target_random_order"
+dataset_id = "2025-07-04_04_ESPM154_vol_000_subset_2048_target_random_order"
 
 batch_size = 8
 val_split = 0.1
@@ -13,13 +13,14 @@ drop_last = false
 target = "v1tovideo.neural_autoencoder.models:TAE_v1"
 input_dim = 64
 latent_dim = 64
-latent_num_tokens = 1024
-num_layers = 6
-nhead = 8
+latent_num_tokens = 2048
+num_layers = 4
+nhead = 4
 
 [train]
-epochs = 120
-learning_rate = 1e-4
+epochs = 260
+learning_rate = 3e-5
+#lr_start = 3e-6 # Optional warm-up start; comment this whole line to use no lr schedule
 weight_decay = 1e-4
 grad_clip_norm = 1.0
 device = "cuda:1"
@@ -29,12 +30,12 @@ device = "cuda:1"
 name = "combined"
 # Combined options (used only when name = "combined")
 weight_id = 0.1
-weight_time = 5.0
+weight_time = 20.0
 weight_rec = 10.0
 # id supports: "cross_entropy"
 name_id = "cross_entropy"
 # time/rec support: "masked_mse", "masked_mae", "poisson_nll"
-name_time = "masked_mse"
+name_time = "masked_mae"
 name_rec = "masked_mse"
 # PoissonNLLLoss options (used only when name = "poisson_nll")
 poisson_log_input = true
